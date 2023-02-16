@@ -1,0 +1,43 @@
+kind: pipeline
+type: docker
+name: build
+
+steps:
+  - name: build
+    image: node:18.14
+    commands:
+      - npm install
+      - npm run build
+
+---
+kind: pipeline
+type: ssh
+name: deployment
+depends_on:
+  - build
+
+server:
+  host:
+    from_secret: host
+  user:
+    from_secret: user
+  password:
+    from_secret: password
+
+clone:
+  disable: true
+
+steps:
+  - name: move
+    commands:
+      - cd /home/apper/projects/server/class_achievements
+      - git checkout main
+      - git pull
+      - cd /home/apper/projects/server
+      - docker-compose up -d --build
+
+trigger:
+  branch:
+    - main
+  event:
+    - push
